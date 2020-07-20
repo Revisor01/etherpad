@@ -33,7 +33,8 @@ RUN git clone --branch develop https://github.com/ether/etherpad-lite.git etherp
     chown -R etherpad:0 etherpad-lite
 
 RUN apt-get purge -y curl git-core && \
-    apt-get autoremove
+    apt-get autoremove -y && \
+    rm -r /var/lib/apt/lists/*
     
 # Follow the principle of least privilege: run as unprivileged user.
 #
