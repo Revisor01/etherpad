@@ -23,21 +23,25 @@ ENV NODE_ENV=production
 USER root
 RUN apt-get update && \
     apt-get install -y curl git-core
+
+RUN useradd --uid 5001 --create-home etherpad
+
+RUN mkdir /opt/etherpad-lite
+
+WORKDIR /opt
+RUN git clone --branch develop https://github.com/ether/etherpad-lite.git etherpad-lite && \
+    chown -R etherpad:0 etherpad-lite
+
+RUN apt-get purge -y curl git-core && \
+    apt-get autoremove
     
 # Follow the principle of least privilege: run as unprivileged user.
 #
 # Running as non-root enables running this image in platforms like OpenShift
 # that do not allow images running as root.
-RUN useradd --uid 5001 --create-home etherpad
 
-RUN mkdir /opt/etherpad-lite && chown etherpad:0 /opt/etherpad-lite
 
 USER etherpad
-
-WORKDIR /opt
-
-RUN git clone --branch develop https://github.com/ether/etherpad-lite.git etherpad-lite &&\
-    chown -R etherpad:0 etherpad-lite
 
 WORKDIR /opt/etherpad-lite
 
