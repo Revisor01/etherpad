@@ -20,19 +20,31 @@ ARG ETHERPAD_PLUGINS="ep_adminpads2 ep_align ep_better_pdf_export ep_comments_pa
 # other things, assets are minified & compressed).
 ENV NODE_ENV=production
 
+USER root
+RUN apt-get update && \
+    apt-get install -y curl git-core
+
+RUN useradd --uid 5001 --create-home etherpad
+
+RUN mkdir /opt/etherpad-lite
+
+WORKDIR /opt
+RUN git clone --branch develop https://github.com/ether/etherpad-lite.git etherpad-lite && \
+    chown -R etherpad:0 etherpad-lite
+
+RUN apt-get purge -y curl git-core && \
+    apt-get autoremove -y && \
+    rm -r /var/lib/apt/lists/*
+    
 # Follow the principle of least privilege: run as unprivileged user.
 #
 # Running as non-root enables running this image in platforms like OpenShift
 # that do not allow images running as root.
-RUN useradd --uid 5001 --create-home etherpad
 
-RUN mkdir /opt/etherpad-lite && chown etherpad:0 /opt/etherpad-lite
 
 USER etherpad
 
 WORKDIR /opt/etherpad-lite
-
-COPY --chown=etherpad:0 ./ ./
 
 # install node dependencies for Etherpad
 RUN bin/installDeps.sh && \
@@ -45,10 +57,10 @@ RUN bin/installDeps.sh && \
 RUN for PLUGIN_NAME in ${ETHERPAD_PLUGINS}; do npm install "${PLUGIN_NAME}" || exit 1; done
 
 # Copy the configuration file.
-COPY --chown=etherpad:0 ./settings.json.docker /opt/etherpad-lite/settings.json
+RUN cp settings.json.docker settings.json
 
 # Fix permissions for root group
 RUN chmod -R g=u .
 
 EXPOSE 9001
-CMD ["node", "--experimental-worker", "node_modules/ep_etherpad-lite/node/server.js"]
+CMD ["node", "node_modules/ep_etherpad-lite/node/server.js"]
